@@ -15,10 +15,7 @@ yarn serve
 yarn build
 ```
 
-### Lints and fixes files
+### Lints and fixes files - for Code editors not using file watchers
 ```
 yarn lint
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
