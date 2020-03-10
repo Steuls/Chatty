@@ -1,0 +1,81 @@
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { UserRepository } from "../../db/repositories/user.repository";
+import { GroupRepository } from "../../db/repositories/group.repository";
+import { MessageRepository } from "../../db/repositories/message.repository";
+import { User } from "../../db/entities/User.entity";
+import { MessageDto } from "../../dto/message.dto";
+import { Message } from "../../db/entities/Message.entity";
+import { GroupDto } from "../../dto/group.dto";
+import { Group } from "../../db/entities/Group.entity";
+
+@Injectable()
+export class ChatService {
+  constructor(
+    @InjectRepository(UserRepository)
+    private userRepository: UserRepository,
+    @InjectRepository(GroupRepository)
+    private groupRepository: GroupRepository,
+    @InjectRepository(MessageRepository)
+    private messageRepository: MessageRepository,
+  ) {}
+
+  async getAllMessages(userId: number, numberLoaded: number): Promise<MessageDto[]> {
+    const groupIds: number[] = this.getGroupIds(await this.getUser(userId));
+    const messages: Message[] = await this.messageRepository.getAllMessages(numberLoaded, groupIds);
+    if (messages === null) { throw new NotFoundException("No Messages were found"); }
+    return messages.map(message => {
+      return new MessageDto(message);
+    });
+  }
+
+  async getRoomMessages(userId: number, numberLoaded: number, roomId: number): Promise<MessageDto[]> {
+    if (!await this.groupRepository.inGroup(userId, roomId)) { throw new UnauthorizedException("User not in group"); }
+    const messages: Message[] = await this.messageRepository.getRoomMessages(numberLoaded, roomId);
+    if (messages === null) { throw new NotFoundException("No Messages were found"); }
+    return messages.map(message => {
+      return new MessageDto(message);
+    });
+  }
+
+  async getGroupInfo(userId: number): Promise<GroupDto[]> {
+    const groupIds: number[] = this.getGroupIds(await this.getUser(userId));
+    return this.groupRepository.getGroups(userId, groupIds);
+  }
+
+  async getUser(userId: number): Promise<User> {
+    const user: User = await this.userRepository.findOne({ where: { userId: userId }, relations: ["groups"]});
+    if (user === null) { throw new NotFoundException("User was not found"); }
+    return user;
+  }
+
+  getGroupIds(user: User): number[] {
+    let groupIds: number[];
+    if (user.groups !== null) {
+      groupIds = user.groups.map(group => group.groupId);
+    } else {
+      groupIds = [-1];
+    }
+    return groupIds;
+  }
+
+  async getAllGroupIds(): Promise<number[]> {
+    const groups: Group[] = await this.groupRepository.createQueryBuilder().getMany();
+    const ids: number[] = groups.map(group => group.groupId);
+    return ids;
+  }
+
+  async inGroup(userId: number, groupId: number): Promise<boolean> {
+    return this.groupRepository.inGroup(userId, groupId);
+  }
+
+  async newMessage(senderId: number, roomId: number, content: string): Promise<any> {
+    const message: Message = new Message();
+    message.fkSender = await this.userRepository.findOne(senderId);
+    message.fkGroup = await this.groupRepository.findOne(roomId);
+    message.message = content;
+    message.timeSent = new Date();
+    await message.save();
+    return new MessageDto(message);
+  }
+}
