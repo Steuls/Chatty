@@ -34,6 +34,7 @@
                 @click:append="showPwd = !showPwd"
                 v-model="details.password"
               />
+              <v-checkbox v-model="remember" label="Remember Me"></v-checkbox>
             </v-form>
           </v-card-text>
           <v-card-actions>
@@ -55,12 +56,17 @@
         details: {
           username: '',
           password: ''
-        }
+        },
+        remember: false
       };
     },
     methods: {
       login() {
-        this.$store.dispatch('login', this.details);
+        if (this.remember) {
+          this.$store.dispatch('permLogin', this.details);
+        } else {
+          this.$store.dispatch('login', this.details);
+        }
       },
       test() {
         this.$store.dispatch('getTest');

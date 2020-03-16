@@ -6,10 +6,13 @@ import { User } from "../db/entities/User.entity";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { JwtService } from "@nestjs/jwt";
 import { JwtPayload } from "./jwt/jwt.payload";
+import { UserTokenRepository } from "../db/repositories/userToken.repository";
+import { UserToken } from "../db/entities/UserToken.entity";
 
 @Injectable()
 export class AuthService {
   constructor(@InjectRepository(UserRepository) private userRepository: UserRepository,
+              @InjectRepository(UserTokenRepository) private userTokenRepository: UserTokenRepository,
               private readonly jwtService: JwtService) {
   }
 
@@ -33,11 +36,35 @@ export class AuthService {
 
   async login(user: any): Promise<any> {
     const payload: JwtPayload = new JwtPayload(user.userName, user.userId);
+    const token: string = this.jwtService.sign(payload.return());
+    let userToken: UserToken | null = await this.userTokenRepository.findOne({userId: user.userId});
+    if (userToken) {
+      userToken.token = token;
+    } else {
+      userToken = new UserToken();
+      userToken.token = token;
+      userToken.userId = user.userId;
+    }
+    await userToken.save();
     return {
-      accessToken: this.jwtService.sign(payload.return()),
+      accessToken: token,
       userName: user.userName,
       userId: user.userId,
-      expiresAt: new Date(new Date().getTime() + (5 * 60000)) // 5 Minutes from now
+      expiresAt: new Date(new Date().getTime() + (10 * 60000)) // 10 Minutes from now
+    };
+  }
+
+  async permLogin(user: any): Promise<any> {
+    const payload: JwtPayload = new JwtPayload(user.userName, user.userId);
+    const token: string = this.jwtService.sign(payload.return());
+    const userObj: User = await this.userRepository.findOne(user.userId);
+    userObj.userToken.token = token;
+    await userObj.save();
+    return {
+      accessToken: token,
+      userName: user.userName,
+      userId: user.userId,
+      expiresAt: new Date(new Date().getDate() + 7) // 7 days from now
     };
   }
 
@@ -49,6 +76,14 @@ export class AuthService {
 
   checkAuth(token: string): any {
     return this.jwtService.verify(token);
+  }
+
+  async checkJwtDbAuth(token: string): Promise<UserToken | null> {
+    return await this.userTokenRepository.findOne({token: token});
+  }
+
+  decodeToken(token: string): any {
+    return this.jwtService.decode(token);
   }
 }
 

@@ -23,9 +23,8 @@
 
       <v-spacer></v-spacer>
 
-      <v-btn @click="testSend" text>
-        <span class="mr-2">Test Button</span>
-        <v-icon>mdi-open-in-new</v-icon>
+      <v-btn @click="signOut" text>
+        <span class="mr-2">Sign Out</span>
       </v-btn>
     </v-app-bar>
     <v-content>
@@ -80,6 +79,9 @@
       },
       forceLeave(room) {
         this.$socket.client.emit('leaveGroup', { groupId: room });
+      },
+      ChangedGroupName(data) {
+        this.$store.commit('updateGroupName', { data });
       }
     },
     data() {
@@ -90,28 +92,11 @@
       };
     },
     methods: {
-      doNotification() {
-        this.$store.commit('changeStatusbar', {
-          mode: 'success',
-          text: 'This was a test',
-          on: true
-        });
-      },
-      doOverride() {
-        this.override = true;
-      },
-      testSend() {
-        this.$socket.client.emit('test', {
-          token: this.$store.state.jwtToken.accessToken,
-          message: 'test received'
-        });
-        console.log('Test sent');
-      },
       doTokenRefresh() {
         if (this.loggedIn) this.$store.dispatch('refreshToken');
       },
-      logStuff() {
-        console.log(this.$store.state.messages.latest);
+      signOut() {
+        this.$store.commit('restoreState');
       }
     },
     computed: {
@@ -119,7 +104,19 @@
         return this.$store.getters.loggedIn;
       }
     },
+    watch: {
+      // eslint-disable-next-line no-unused-vars
+      loggedIn(newVal, oldVal) {
+        if (newVal === true) {
+          this.$ls.set('token', this.$store.state.jwtToken.accessToken);
+        }
+      }
+    },
     created() {
+      // const token = this.$ls.get('token', null);
+      // if (token !== null) {
+      //
+      // }
       this.timedTaskRef = setInterval(this.doTokenRefresh, 8 * 60000); // every 8 minutes refresh JWT
     },
     beforeDestroy() {

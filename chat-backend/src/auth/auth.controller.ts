@@ -21,6 +21,18 @@ export class AuthController {
     return this.authService.login(req.user);
   }
 
+  @UseGuards(LocalAuthGuard)
+  @Post("permLogin")
+  async permLogin(@Request() req: any): Promise<any> {
+    return this.authService.permLogin(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("permDetailGrab")
+  async permDetailGrab(@Request() req: any): Promise<any> {
+    return req.user;
+  }
+
   @Post("signup")
   async signUp(
     @Body(ValidationPipe) createUserDto: CreateUserDto,
@@ -32,6 +44,12 @@ export class AuthController {
   @Get("refresh")
   async refresh(@Request() req: any): Promise<any> {
     return this.authService.login(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("permRefresh")
+  async permRefresh(@Request() req: any): Promise<any> {
+    return this.authService.permLogin(req.user);
   }
 
   @UseGuards(LocalAuthGuard)

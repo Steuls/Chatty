@@ -4,8 +4,16 @@ import store from './store';
 import vuetify from './plugins/vuetify';
 import io from 'socket.io-client';
 import VueSocketIOExt from 'vue-socket.io-extended';
+import Storage from 'vue-ls';
 
-// Chat Setup
+// LocalStorage setup
+const options = {
+  namespace: 'vuejs__', // key prefix
+  name: 'ls', // name variable Vue.[ls] or this.[$ls],
+  storage: 'local' // storage name session, local, memory
+};
+
+Vue.use(Storage, options);
 
 // Web Socket setup
 const socket = io('http://10.236.131.152:81');

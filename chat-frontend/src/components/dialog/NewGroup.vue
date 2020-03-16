@@ -9,6 +9,7 @@
           <v-row>
             <v-col cols="12">
               <v-text-field
+                v-if="groupMode"
                 label="Group name"
                 required
                 v-model="groupName"
@@ -16,6 +17,7 @@
             </v-col>
             <v-col cols="12">
               <v-text-field
+                v-if="groupMode"
                 label="Group description"
                 v-model="groupDescription"
               ></v-text-field>
@@ -28,13 +30,19 @@
               ></v-textarea>
             </v-col>
             <v-col cols="12">
+              <v-radio-group v-model="groupMode" row>
+                <v-radio label="Private" :value="false"></v-radio>
+                <v-radio label="Group" :value="true"></v-radio>
+              </v-radio-group>
+            </v-col>
+            <v-col cols="12">
               <v-select
                 v-model="members"
                 :items="users"
-                label="Select group members"
-                multiple
-                chips
-                deletable-chips
+                :label="memberSelectLabel"
+                :multiple="groupMode"
+                :chips="groupMode"
+                :deletable-chips="groupMode"
               ></v-select>
             </v-col>
           </v-row>
@@ -50,7 +58,7 @@
 </template>
 
 <script>
-  import { http } from '../plugins/http';
+  import { http } from '../../plugins/http';
 
   export default {
     name: 'NewGroup',
@@ -62,11 +70,25 @@
         firstMessage: '',
         members: null,
         users: null,
-        show: false
+        show: false,
+        groupMode: false
       };
+    },
+    computed: {
+      memberSelectLabel() {
+        if (this.groupMode) return 'Select group members';
+        else return 'Select another member';
+      }
     },
     methods: {
       save() {
+        if (!this.groupMode) {
+          let name = '';
+          this.members.forEach(member => {
+            name += member;
+          });
+          this.groupName = name;
+        }
         const newGroup = {
           groupName: this.groupName,
           groupDescription: this.groupDescription,
@@ -78,18 +100,29 @@
           senderId: this.$store.state.user.id,
           token: this.$store.state.jwtToken.accessToken
         });
-        this.show = false;
-        this.groupName = '';
-        this.groupDescription = '';
-        this.firstMessage = '';
-        this.members = null;
+        this.clearFields();
       },
       cancel() {
+        this.clearFields();
+      },
+      getUsers() {
+        http
+          .get('chatApi/users', {
+            headers: {
+              Authorization: `Bearer ${this.$store.state.jwtToken.accessToken}`
+            }
+          })
+          .then(response => {
+            this.users = response.data;
+          })
+          .catch(e => console.log(e));
+      },
+      clearFields() {
+        this.show = false;
         this.groupName = '';
         this.groupDescription = '';
         this.firstMessage = '';
         this.members = null;
-        this.show = false;
       }
     },
     watch: {
@@ -103,20 +136,17 @@
       show(newShow, oldShow) {
         if (newShow === false) {
           this.$emit('closed');
+        } else {
+          this.getUsers();
         }
+      },
+      // eslint-disable-next-line no-unused-vars
+      groupMode(newMode, oldMode) {
+        if (newMode === false) this.members = null;
       }
     },
     created() {
-      http
-        .get('chatApi/users', {
-          headers: {
-            Authorization: `Bearer ${this.$store.state.jwtToken.accessToken}`
-          }
-        })
-        .then(response => {
-          this.users = response.data;
-        })
-        .catch(e => console.log(e));
+      this.getUsers();
     }
   };
 </script>

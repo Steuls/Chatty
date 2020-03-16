@@ -13,17 +13,25 @@
       @addRoom="dialog = true"
     />
     <new-group :dialog="dialog" @closed="dialog = false"></new-group>
+    <ChangeGroupName
+      :dialog="dialogName"
+      :name="roomName"
+      :group-id="roomId"
+      @closed="dialogName = false"
+    ></ChangeGroupName>
   </div>
 </template>
 
 <script>
   import ChatWindow from 'vue-advanced-chat';
   import 'vue-advanced-chat/dist/vue-advanced-chat.css';
-  import NewGroup from './NewGroup';
+  import NewGroup from './dialog/NewGroup';
+  import ChangeGroupName from './dialog/ChangeGroupName';
 
   export default {
     name: 'ChatPage',
     components: {
+      ChangeGroupName,
       ChatWindow,
       NewGroup
     },
@@ -48,7 +56,10 @@
             title: 'Delete Group'
           }
         ],
-        dialog: false
+        dialog: false,
+        dialogName: false,
+        roomName: '',
+        roomId: 0
       };
     },
     computed: {
@@ -59,9 +70,7 @@
         return this.$store.state.messages ? this.$store.state.messages.all : [];
       },
       rooms() {
-        return this.$store.state.messages
-          ? this.$store.state.messages.latest
-          : [];
+        return this.$store.state.messages ? this.$store.getters.getRooms : [];
       },
       messagesLoaded: {
         set(newVal) {
@@ -87,6 +96,18 @@
       menuActionHandler({ roomId, action }) {
         switch (action.name) {
           case 'changeName':
+            if (this.$store.getters.isRoomPrivate(roomId)) {
+              this.$store.commit('changeStatusbar', {
+                on: true,
+                mode: 'warning',
+                text:
+                  'This is currently a private chat the name cannot be changed'
+              });
+            } else {
+              this.dialogName = true;
+              this.roomId = roomId;
+              this.roomName = this.$store.getters.getGroupNameById(roomId);
+            }
             break;
           case 'leaveGroup':
             this.$socket.client.emit('leaveGroup', {

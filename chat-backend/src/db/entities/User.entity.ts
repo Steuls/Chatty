@@ -4,11 +4,12 @@ import {
   Entity,
   Index,
   ManyToMany,
-  OneToMany,
-  PrimaryGeneratedColumn,
+  OneToMany, OneToOne,
+  PrimaryGeneratedColumn
 } from "typeorm";
 import { Group } from "./Group.entity";
 import { Message } from "./Message.entity";
+import { UserToken } from "./UserToken.entity";
 
 @Index("PK_User", ["userId"], { unique: true })
 @Entity("User", { schema: "dbo" })
@@ -39,4 +40,10 @@ export class User extends BaseEntity {
     message => message.fkSender
   )
   sentMessages: Message[];
+
+  @OneToOne(
+    () => UserToken,
+    userToken => userToken.user
+  )
+  userToken: UserToken;
 }

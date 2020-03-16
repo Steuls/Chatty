@@ -142,8 +142,11 @@ export class ChatService {
     return await this.groupRepository.getGroup(group.groupId);
   }
 
-  async changeGroupName(groupId: number): Promise<void> {
+  async changeGroupName(groupId: number, groupName: string): Promise<void> {
     if (!await this.groupExists(groupId)) { throw new NotFoundException("Group does not exist"); }
+    const group: Group = await this.groupRepository.findOne(groupId);
+    group.groupName = groupName;
+    await group.save();
   }
 
   async deleteGroup(groupId: number): Promise<void> {

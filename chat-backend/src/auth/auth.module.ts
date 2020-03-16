@@ -9,10 +9,11 @@ import { JwtModule } from "@nestjs/jwt";
 import { jwtConstants } from "../constants/constants";
 import { JwtStrategy } from "./jwt/jwt.strategy";
 import { JwtWsStrategy } from "./ws/jwtWs.strategy";
+import { UserTokenRepository } from "../db/repositories/userToken.repository";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserRepository]),
+    TypeOrmModule.forFeature([UserRepository, UserTokenRepository]),
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,

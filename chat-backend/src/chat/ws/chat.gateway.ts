@@ -93,10 +93,11 @@ export class ChatGateway implements OnGatewayDisconnect {
     });
   }
 
-  // @SubscribeMessage("changeGroupName")
-  // async changeName(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<void> {
-  //
-  // }
+  @SubscribeMessage("changeGroupName")
+  async changeName(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<void> {
+    await this.chatService.changeGroupName(data.groupId, data.groupName);
+    this.server.in(`${data.groupId}`).emit("ChangedGroupName", { groupName: data.groupName, groupId: data.groupId });
+  }
 
   @SubscribeMessage("deleteGroup")
   async deleteGroup(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<void> {

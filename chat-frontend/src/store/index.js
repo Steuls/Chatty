@@ -1,6 +1,13 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { http } from '../plugins/http';
+import {
+  LoadAllMessages,
+  LoadChats,
+  LoadMessages,
+  login, Permlogin,
+  RefreshToken,
+  Register
+} from '../plugins/http';
 
 Vue.use(Vuex);
 
@@ -43,9 +50,50 @@ export default new Vuex.Store({
     },
     loggedIn: (state, getters) => {
       return !!(getters.tokenValid && getters.userValid); // If either is not valid user cannot be verified as logged in
+    },
+    getGroupById: state => id => {
+      const index = state.messages.latest.findIndex(group => {
+        return group.roomId === id;
+      });
+      return state.messages.latest[index];
+    },
+    getGroupNameById: (state, getters) => id => {
+      return getters.getGroupById(id).roomName;
+    },
+    getRooms: state => {
+      const rooms = state.messages.latest;
+      rooms.forEach(room => {
+        if (room.users.length === 2) {
+          room.users.forEach(user => {
+            if (user.username !== state.user.username) {
+              room.roomName = user.username;
+            }
+          });
+        }
+      });
+      return rooms;
+    },
+    isRoomPrivate: (state, getters) => id => {
+      const group = getters.getGroupById(id);
+      return group.users.length === 2; // If only 2 users its private
     }
   },
   mutations: {
+    restoreState(state) {
+      // Has to be done like this to remain store integrity
+      state.jwtToken.accessToken = null;
+      state.jwtToken.expiresIn = null;
+      state.launchNotification = false;
+      state.notification.mode = 'success';
+      state.notification.text = 'Default';
+      state.notification.timeout = 5000;
+      state.currentRoom = 0;
+      state.user.username = null;
+      state.id = 0;
+      state.messages.latest = [];
+      state.messages.all = [];
+      state.messagesLoaded = true;
+    },
     updateToken(state, payload) {
       state.jwtToken.accessToken = payload.accessToken;
       state.jwtToken.expiresIn = payload.expiresAt;
@@ -105,121 +153,41 @@ export default new Vuex.Store({
     },
     addRoom(state, payload) {
       state.messages.latest = [...state.messages.latest, payload];
+    },
+    updateGroupName(state, payload) {
+      const index = state.messages.latest.findIndex(group => {
+        return group.roomId === payload.groupId;
+      });
+      if (index === -1)
+        console.error(`Group Not found with ID: ${payload.groupId}`);
+      else state.messages.latest[index].roomName = payload.groupName;
     }
   },
   actions: {
+    // All HTTP is done through the HTTP plugin JS file
     login({ commit, dispatch }, payload) {
-      http
-        .post('/auth/login', {
-          username: payload.username,
-          password: payload.password
-        })
-        .then(response => {
-          commit('updateToken', response.data);
-          commit('updateUser', response.data);
-          commit('changeStatusbar', {
-            mode: 'success',
-            text: 'Login successful',
-            on: true
-          });
-          dispatch('loadChats');
-        })
-        .catch(e => {
-          if (e.response.status === 401) {
-            commit('changeStatusbar', {
-              mode: 'error',
-              text: 'Incorrect username or password',
-              on: true
-            });
-          }
-        });
+      login(commit, dispatch, payload);
+    },
+    permLogin({commit, dispatch}, payload) {
+      Permlogin(commit, dispatch, payload);
     },
     register({ commit }, payload) {
-      http
-        .post('/auth/signup', {
-          userName: payload.username,
-          password: payload.password,
-          firstName: payload.firstName,
-          lastName: payload.lastName
-        })
-        .then(response => {
-          if (response.data === true) {
-            commit('changeStatusbar', {
-              mode: 'success',
-              text: 'Registration successful please login',
-              on: true
-            });
-          }
-        })
-        .catch(e => console.log(e));
+      Register(commit, payload);
     },
     loadChats(context) {
       // Gets the groups and their latest message for sidebar
-      http
-        .get('/chatApi/groups', {
-          headers: {
-            Authorization: `Bearer ${context.state.jwtToken.accessToken}`
-          }
-        })
-        .then(response => {
-          context.commit('setLatestMessages', response.data);
-        })
-        .catch(e => console.log(e.response));
+      LoadChats(context);
     },
     loadMessages(context, payload) {
       // Gets a set amount of messages
-      http
-        .get('/chatApi/room', {
-          params: {
-            numberLoaded: payload.loaded,
-            roomId: payload.roomId
-          },
-          headers: {
-            Authorization: `Bearer ${context.state.jwtToken.accessToken}`
-          }
-        })
-        .then(response => {
-          context.commit('setAllMessages', response.data);
-          context.commit('setRoom', payload.roomId);
-        })
-        .catch(e => {
-          if (
-            e.response.status === 404 &&
-            e.response.data.message === 'No Messages were found'
-          ) {
-            this.messagesLoaded = true;
-          } else {
-            console.log(e.response);
-          }
-        });
+      LoadMessages(context, payload);
     },
     loadAllMessages(context, payload) {
       // Gets a set amount of messages to preload some chats
-      http
-        .get('/chatApi/all', {
-          params: {
-            numberLoaded: payload.loaded
-          },
-          headers: {
-            Authorization: `Bearer ${context.state.jwtToken.accessToken}`
-          }
-        })
-        .then(response => {
-          context.commit('setAllMessages', response.data);
-        })
-        .catch(e => console.log(e.response));
+      LoadAllMessages(context, payload);
     },
     refreshToken(context) {
-      http
-        .get('/auth/refresh', {
-          headers: {
-            Authorization: `Bearer ${context.state.jwtToken.accessToken}`
-          }
-        })
-        .then(response => {
-          context.commit('updateToken', response.data);
-        })
-        .catch(e => console.log(e.response));
+      RefreshToken(context);
     }
   }
 });
