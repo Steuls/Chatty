@@ -1,25 +1,31 @@
 <template>
-  <chat-window
-    :rooms="rooms"
-    :messages="messages"
-    :messagesLoaded="messagesLoaded"
-    :currentUserId="currentUserId.toString()"
-    :menuActions="menuActions"
-    height="800px"
-    @fetchMessages="fetchMessages"
-    @menuActionHandler="menuActionHandler"
-    @sendMessage="sendMessage"
-  />
+  <div>
+    <chat-window
+      :rooms="rooms"
+      :messages="messages"
+      :messagesLoaded="messagesLoaded"
+      :currentUserId="currentUserId.toString()"
+      :menuActions="menuActions"
+      height="800px"
+      @fetchMessages="fetchMessages"
+      @menuActionHandler="menuActionHandler"
+      @sendMessage="sendMessage"
+      @addRoom="dialog = true"
+    />
+    <new-group :dialog="dialog" @closed="dialog = false"></new-group>
+  </div>
 </template>
 
 <script>
   import ChatWindow from 'vue-advanced-chat';
   import 'vue-advanced-chat/dist/vue-advanced-chat.css';
+  import NewGroup from './NewGroup';
 
   export default {
     name: 'ChatPage',
     components: {
-      ChatWindow
+      ChatWindow,
+      NewGroup
     },
     data() {
       return {
@@ -36,8 +42,13 @@
           {
             name: 'inviteGroup',
             title: 'Invite to Group'
+          },
+          {
+            name: 'deleteGroup',
+            title: 'Delete Group'
           }
-        ]
+        ],
+        dialog: false
       };
     },
     computed: {
@@ -73,14 +84,25 @@
         });
         this.pagination += 100;
       },
-      // eslint-disable-next-line no-unused-vars
-      menuActionHandler({ room, action }) {
-        switch (action) {
+      menuActionHandler({ roomId, action }) {
+        switch (action.name) {
           case 'changeName':
             break;
           case 'leaveGroup':
+            this.$socket.client.emit('leaveGroup', {
+              groupId: roomId,
+              token: this.$store.state.jwtToken.accessToken
+            });
+            this.$store.commit('removeRoom', roomId);
             break;
           case 'inviteGroup':
+            break;
+          case 'deleteGroup':
+            this.$socket.client.emit('deleteGroup', {
+              groupId: roomId,
+              token: this.$store.state.jwtToken.accessToken
+            });
+            this.$store.commit('removeRoom', roomId);
             break;
         }
       },

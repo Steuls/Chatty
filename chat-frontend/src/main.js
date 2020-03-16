@@ -8,7 +8,7 @@ import VueSocketIOExt from 'vue-socket.io-extended';
 // Chat Setup
 
 // Web Socket setup
-const socket = io('http://localhost:81');
+const socket = io('http://10.236.131.152:81');
 Vue.use(VueSocketIOExt, socket);
 
 // Production setting

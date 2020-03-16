@@ -1,4 +1,5 @@
 import {
+  BaseEntity,
   Column,
   Entity,
   Index,
@@ -12,7 +13,7 @@ import { Message } from "./Message.entity";
 
 @Index("PK_Group", ["groupId"], { unique: true })
 @Entity("Group", { schema: "dbo" })
-export class Group {
+export class Group extends BaseEntity {
   @PrimaryGeneratedColumn({ type: "int", name: "GroupID" })
   groupId: number;
 

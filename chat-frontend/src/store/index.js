@@ -83,6 +83,12 @@ export default new Vuex.Store({
     setRoom(state, payload) {
       state.currentRoom = payload;
     },
+    removeRoom(state, payload) {
+      const index = state.messages.latest.findIndex(group => {
+        return group.roomId === payload;
+      });
+      state.messages.latest.splice(index, 1);
+    },
     updateLatestMessage(state, { roomId, message }) {
       const index = state.messages.latest.findIndex(room => {
         return room.roomId === roomId;
@@ -96,6 +102,9 @@ export default new Vuex.Store({
     },
     updateCurrentMessages(state, payload) {
       state.messages.all = [...state.messages.all, payload];
+    },
+    addRoom(state, payload) {
+      state.messages.latest = [...state.messages.latest, payload];
     }
   },
   actions: {
@@ -158,7 +167,7 @@ export default new Vuex.Store({
         .catch(e => console.log(e.response));
     },
     loadMessages(context, payload) {
-      // Gets a set amount of messages to preload some chats
+      // Gets a set amount of messages
       http
         .get('/chatApi/room', {
           params: {
@@ -173,7 +182,16 @@ export default new Vuex.Store({
           context.commit('setAllMessages', response.data);
           context.commit('setRoom', payload.roomId);
         })
-        .catch(e => console.log(e.response));
+        .catch(e => {
+          if (
+            e.response.status === 404 &&
+            e.response.data.message === 'No Messages were found'
+          ) {
+            this.messagesLoaded = true;
+          } else {
+            console.log(e.response);
+          }
+        });
     },
     loadAllMessages(context, payload) {
       // Gets a set amount of messages to preload some chats
@@ -200,7 +218,8 @@ export default new Vuex.Store({
         })
         .then(response => {
           context.commit('updateToken', response.data);
-        });
+        })
+        .catch(e => console.log(e.response));
     }
   }
 });

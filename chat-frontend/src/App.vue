@@ -23,7 +23,7 @@
 
       <v-spacer></v-spacer>
 
-      <v-btn @click="logStuff" text>
+      <v-btn @click="testSend" text>
         <span class="mr-2">Test Button</span>
         <v-icon>mdi-open-in-new</v-icon>
       </v-btn>
@@ -57,9 +57,13 @@
     },
     sockets: {
       connect() {
-        this.$socket.client.emit('login', this.$store.state.user.id);
+        this.$socket.client.emit('login', {
+          id: this.$store.state.user.id,
+          token: this.$store.state.jwtToken.accessToken
+        });
       },
-      newMessage({ roomId, message }) {
+      newMessage(data) {
+        const { roomId, message } = data;
         this.$store.commit('updateLatestMessage', { roomId, message });
         if (this.$store.state.currentRoom === roomId) {
           this.$store.commit('updateCurrentMessages', message);
@@ -67,6 +71,15 @@
       },
       testReceived(data) {
         console.log(data.message);
+      },
+      newRoom({ group }) {
+        this.$store.commit('addRoom', group);
+      },
+      error(error) {
+        console.log(error);
+      },
+      forceLeave(room) {
+        this.$socket.client.emit('leaveGroup', { groupId: room });
       }
     },
     data() {
@@ -90,7 +103,7 @@
       testSend() {
         this.$socket.client.emit('test', {
           token: this.$store.state.jwtToken.accessToken,
-          message: 'this was a test'
+          message: 'test received'
         });
         console.log('Test sent');
       },
@@ -107,7 +120,7 @@
       }
     },
     created() {
-      this.timedTaskRef = setInterval(this.doTokenRefresh, 8 * 60000);
+      this.timedTaskRef = setInterval(this.doTokenRefresh, 8 * 60000); // every 8 minutes refresh JWT
     },
     beforeDestroy() {
       clearInterval(this.timedTaskRef);

@@ -15,8 +15,7 @@ export class GroupDto {
     {
       _id: number;
       username: string;
-    }[]
-  ;
+    }[];
 
   constructor(groupWithMessages: SpMessageLatestListGetProcedure, groupsWithUsers: Group[]) {
     const check: Group[] = groupsWithUsers.filter(group => group.groupId === groupWithMessages.GroupID);
@@ -31,8 +30,11 @@ export class GroupDto {
       // eslint-disable-next-line @typescript-eslint/camelcase
       sender_id: groupWithMessages.SenderID,
       username: groupWithMessages.Sender,
-      timestamp: groupWithMessages.TimeSent.toTimeString(),
+      timestamp: null,
     };
+    if (groupWithMessages.TimeSent !== null) {
+      this.lastMessage.timestamp = groupWithMessages.TimeSent.toTimeString();
+    }
     this.users = group.users.map(user => {
       return {
         _id: user.userId,
