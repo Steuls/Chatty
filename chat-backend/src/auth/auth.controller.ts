@@ -30,7 +30,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get("permDetailGrab")
   async permDetailGrab(@Request() req: any): Promise<any> {
-    return req.user;
+    return this.authService.permLogin(req.user);
   }
 
   @Post("signup")

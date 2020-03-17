@@ -32,17 +32,30 @@ export const login = (commit, dispatch, payload) => {
     });
 };
 
-// export const PermDetailGrab = context => {
-//   http
-//     .get('/auth/permDetailGrab', {
-//       headers: header(context)
-//     })
-//     .then(response => {
-//       context.commit('updateUser', )
-//     })
-// };
+export const PermDetailGrab = (context, ls) => {
+  http
+    .get('/auth/permDetailGrab', {
+      headers: header(context)
+    })
+    .then(response => {
+      context.commit('permDetailLoad', response.data);
+      ls.set('token', context.state.jwtToken.accessToken);
+      context.dispatch('loadChats');
+    })
+    .catch(e => {
+      if (e.response.status === 401) {
+        popUp(
+          context.commit,
+          'error',
+          'No login in past 7 days please login again'
+        );
+        ls.clear();
+        context.commit('accessTokenChange', null);
+      }
+    });
+};
 
-export const Permlogin = (commit, dispatch, payload) => {
+export const Permlogin = (commit, dispatch, payload, state, ls) => {
   http
     .post('/auth/permLogin', {
       username: payload.username,
@@ -52,13 +65,15 @@ export const Permlogin = (commit, dispatch, payload) => {
       commit('updateToken', response.data);
       commit('updateUser', response.data);
       popUp(commit, 'success', 'Login Successful');
+      ls.set('token', state.jwtToken.accessToken);
       dispatch('loadChats');
     })
     .catch(e => {
       if (e.response.status === 401) {
         popUp(commit, 'error', 'Incorrect Username or Password');
+      } else {
+        console.log(e.response);
       }
-      console.log(e.response);
     });
 };
 

@@ -4,7 +4,7 @@ import {
   LoadAllMessages,
   LoadChats,
   LoadMessages,
-  login, Permlogin,
+  login, PermDetailGrab, Permlogin,
   RefreshToken,
   Register
 } from '../plugins/http';
@@ -45,7 +45,7 @@ export default new Vuex.Store({
     userValid: state => {
       return (
         // If user or children is null or 0 then the user is not valid
-        state.user != null && state.user.username != null && state.user.id !== 0
+        state.user.username != null && state.user.id !== 0
       );
     },
     loggedIn: (state, getters) => {
@@ -161,6 +161,15 @@ export default new Vuex.Store({
       if (index === -1)
         console.error(`Group Not found with ID: ${payload.groupId}`);
       else state.messages.latest[index].roomName = payload.groupName;
+    },
+    accessTokenChange(state, payload) {
+      state.jwtToken.accessToken = payload;
+    },
+    permDetailLoad(state, payload) {
+      state.user.username = payload.userName;
+      state.user.id = payload.userId;
+      state.jwtToken.accessToken = payload.accessToken;
+      state.jwtToken.expiresIn = payload.expiresAt;
     }
   },
   actions: {
@@ -168,8 +177,8 @@ export default new Vuex.Store({
     login({ commit, dispatch }, payload) {
       login(commit, dispatch, payload);
     },
-    permLogin({commit, dispatch}, payload) {
-      Permlogin(commit, dispatch, payload);
+    permLogin({ commit, dispatch, state }, payload) {
+      Permlogin(commit, dispatch, payload, state, this._vm.$ls);
     },
     register({ commit }, payload) {
       Register(commit, payload);
@@ -188,6 +197,10 @@ export default new Vuex.Store({
     },
     refreshToken(context) {
       RefreshToken(context);
+    },
+    permDetailGrab(context, payload) {
+      context.commit('accessTokenChange', payload);
+      PermDetailGrab(context, this._vm.$ls);
     }
   }
 });

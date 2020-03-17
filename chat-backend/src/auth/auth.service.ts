@@ -35,7 +35,30 @@ export class AuthService {
   }
 
   async login(user: any): Promise<any> {
-    const payload: JwtPayload = new JwtPayload(user.userName, user.userId);
+    const token: string = await this.tokenUpdate(user);
+    return {
+      accessToken: token,
+      userName: user.userName,
+      userId: user.userId,
+      expiresAt: new Date(new Date().getTime() + (10 * 60000)) // 10 Minutes from now
+    };
+  }
+
+  async permLogin(user: any): Promise<any> {
+    const token: string = await this.tokenUpdate(user);
+    const temp: Date = new Date();
+    const expiry: Date = new Date();
+    expiry.setDate(temp.getDate() + 7); // 7 days from now
+    return {
+      accessToken: token,
+      userName: user.userName ? user.userName : user.username,
+      userId: user.userId,
+      expiresAt: expiry
+    };
+  }
+
+  async tokenUpdate(user: any): Promise<string> {
+    const payload: JwtPayload = new JwtPayload(user.userName ? user.userName : user.username, user.userId);
     const token: string = this.jwtService.sign(payload.return());
     let userToken: UserToken | null = await this.userTokenRepository.findOne({userId: user.userId});
     if (userToken) {
@@ -46,26 +69,7 @@ export class AuthService {
       userToken.userId = user.userId;
     }
     await userToken.save();
-    return {
-      accessToken: token,
-      userName: user.userName,
-      userId: user.userId,
-      expiresAt: new Date(new Date().getTime() + (10 * 60000)) // 10 Minutes from now
-    };
-  }
-
-  async permLogin(user: any): Promise<any> {
-    const payload: JwtPayload = new JwtPayload(user.userName, user.userId);
-    const token: string = this.jwtService.sign(payload.return());
-    const userObj: User = await this.userRepository.findOne(user.userId);
-    userObj.userToken.token = token;
-    await userObj.save();
-    return {
-      accessToken: token,
-      userName: user.userName,
-      userId: user.userId,
-      expiresAt: new Date(new Date().getDate() + 7) // 7 days from now
-    };
+    return token;
   }
 
   async changePassword(id: string, newPassword: string): Promise<void> {

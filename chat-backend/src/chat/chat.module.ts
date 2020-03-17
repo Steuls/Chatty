@@ -7,9 +7,10 @@ import { ChatController } from "./api/chat.controller";
 import { ChatService } from "./api/chat.service";
 import { ChatGateway } from "./ws/chat.gateway";
 import { AuthModule } from "../auth/auth.module";
+import { FileStoreRepository } from "../db/repositories/fileStore.repository";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserRepository, GroupRepository, MessageRepository]), AuthModule],
+  imports: [TypeOrmModule.forFeature([UserRepository, GroupRepository, MessageRepository, FileStoreRepository]), AuthModule],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway]
 })

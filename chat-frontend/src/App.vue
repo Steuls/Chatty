@@ -23,13 +23,13 @@
 
       <v-spacer></v-spacer>
 
-      <v-btn @click="signOut" text>
+      <v-btn v-if="loggedIn" @click="signOut" text>
         <span class="mr-2">Sign Out</span>
       </v-btn>
     </v-app-bar>
     <v-content>
       <transition name="fade">
-        <template v-if="!loggedIn && !override">
+        <template v-if="!loggedIn">
           <login @register="loginMode = false" v-if="loginMode" />
           <register @login="loginMode = true" v-else />
         </template>
@@ -87,7 +87,6 @@
     data() {
       return {
         loginMode: true,
-        override: false,
         timedTaskRef: null
       };
     },
@@ -96,6 +95,7 @@
         if (this.loggedIn) this.$store.dispatch('refreshToken');
       },
       signOut() {
+        this.$ls.clear();
         this.$store.commit('restoreState');
       }
     },
@@ -104,19 +104,11 @@
         return this.$store.getters.loggedIn;
       }
     },
-    watch: {
-      // eslint-disable-next-line no-unused-vars
-      loggedIn(newVal, oldVal) {
-        if (newVal === true) {
-          this.$ls.set('token', this.$store.state.jwtToken.accessToken);
-        }
-      }
-    },
     created() {
-      // const token = this.$ls.get('token', null);
-      // if (token !== null) {
-      //
-      // }
+      const token = this.$ls.get('token', null);
+      if (token !== null) {
+        this.$store.dispatch('permDetailGrab', token);
+      }
       this.timedTaskRef = setInterval(this.doTokenRefresh, 8 * 60000); // every 8 minutes refresh JWT
     },
     beforeDestroy() {

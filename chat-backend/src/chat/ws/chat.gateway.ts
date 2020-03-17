@@ -73,6 +73,25 @@ export class ChatGateway implements OnGatewayDisconnect {
       .emit("newMessage", { roomId: roomId, message: message });
   }
 
+  // @SubscribeMessage("sendFile")
+  // async onNewFile(
+  //   @MessageBody() data: any,
+  //   @ConnectedSocket() client: Socket,
+  // ): Promise<void> {
+  //   const { roomId, file, userId } = data;
+  //   if (!(await this.chatService.inGroup(userId, roomId))) {
+  //     throw new WsException("User not in group");
+  //   }
+  //   const message: MessageDto = await this.chatService.newMessage(
+  //     userId,
+  //     roomId,
+  //     content,
+  //   );
+  //   this.server
+  //     .in(`${roomId}`)
+  //     .emit("newMessage", { roomId: roomId, message: message });
+  // }
+
   @SubscribeMessage("roomAdded")
   async onNewRoom(
     @MessageBody() data: any,

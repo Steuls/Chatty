@@ -29,7 +29,7 @@ export class ChatService {
       numberLoaded,
       groupIds,
     );
-    if (messages === null) {
+    if (messages === null || messages.length === 0) {
       throw new NotFoundException("No Messages were found");
     }
     return messages.map(message => {
@@ -105,6 +105,21 @@ export class ChatService {
     message.fkGroup = await this.groupRepository.findOne(roomId);
     message.message = content;
     message.timeSent = new Date();
+    await message.save();
+    return new MessageDto(message);
+  }
+
+  async newFile(
+    senderId: number,
+    roomId: number,
+    file: any
+  ): Promise<any> {
+    const message: Message = new Message();
+    message.fkSender = await this.userRepository.findOne(senderId);
+    message.fkGroup = await this.groupRepository.findOne(roomId);
+    message.message = file.name;
+    message.timeSent = new Date();
+    message.isFile = true;
     await message.save();
     return new MessageDto(message);
   }
